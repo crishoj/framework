@@ -45,14 +45,40 @@ class StorageLinkCommand extends Command
             $this->warn('Removed existing "public/storage" directory.');
         }
 
-        $files = $this->laravel->make('files');
-
         if (! $this->option('absolute')) {
-            $targetPath = $files->relativePath($targetPath, public_path());
+            $targetPath = $this->relativePath($targetPath, public_path());
         }
 
-        $files->link($targetPath, $publicPath);
+        $this->laravel->make('files')->link($targetPath, $publicPath);
 
         $this->info('The [public/storage] directory has been linked.');
+    }
+
+    /**
+     * Compute the relative path to a target from a given base path.
+     *
+     * @param string $target
+     * @param string $basePath
+     * @return string
+     */
+    protected function relativePath($target, $basePath)
+    {
+        // Find length of common prefix
+        $i = 0;
+        $limit = min(strlen($target), strlen($basePath));
+        while ($i < $limit && $basePath[$i] === $target[$i]) {
+            $i++;
+        }
+
+        $path = ltrim(substr($target, $i), DIRECTORY_SEPARATOR);
+        $tail = substr($basePath, $i);
+
+        if (strlen($tail)) {
+            $levelsUp = substr_count($tail, DIRECTORY_SEPARATOR) + 1;
+
+            return str_repeat('..'.DIRECTORY_SEPARATOR, $levelsUp).$path;
+        }
+
+        return $path;
     }
 }
